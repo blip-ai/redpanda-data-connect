@@ -103,6 +103,12 @@ func TestProcessorIntegration(t *testing.T) {
 	t.Run("aggregate", func(t *testing.T) {
 		testMongoDBProcessorAggregate(mongoClient, port, t)
 	})
+	t.Run("update many", func(t *testing.T) {
+		testMongoDBProcessorUpdateMany(mongoClient, port, t)
+	})
+	t.Run("find many", func(t *testing.T) {
+		testMongoDBProcessorFindMany(mongoClient, port, t)
+	})
 }
 
 func testMProc(t testing.TB, port, collection, configYAML string) *mongodb.Processor {
@@ -574,5 +580,125 @@ document_map: |
 			diff, explanation := jsondiff.Compare(mBytes, []byte(test.expected), &jdopts)
 			assert.Equalf(t, jsondiff.FullMatch.String(), diff.String(), "%s: %s", t.Name(), explanation)
 		})
+	}
+}
+
+func testMongoDBProcessorFindMany(mongoClient *mongo.Client, port string, t *testing.T) {
+	tCtx := t.Context()
+	collection := mongoClient.Database("TestDB").Collection("TestCollection")
+
+	_, err := collection.InsertOne(t.Context(), bson.M{"a": "foo", "b": "bar", "c": "baz", "answer_to_everything": 42})
+	assert.NoError(t, err)
+
+	for _, tt := range []struct {
+		name        string
+		message     string
+		marshalMode mongodb.JSONMarshalMode
+		collection  string
+		expected    string
+	}{
+		{
+			name:        "canonical marshal mode",
+			marshalMode: mongodb.JSONMarshalModeCanonical,
+			message:     `{"a":"foo","x":"ignore_me_via_filter_map"}`,
+			expected:    `[{"a":"foo","b":"bar","c":"baz","answer_to_everything":{"$numberInt":"42"}}]`,
+		},
+		{
+			name:        "relaxed marshal mode",
+			marshalMode: mongodb.JSONMarshalModeRelaxed,
+			message:     `{"a":"foo","x":"ignore_me_via_filter_map"}`,
+			expected:    `[{"a":"foo","b":"bar","c":"baz","answer_to_everything":42}]`,
+		},
+		{
+			name:     "no documents found",
+			message:  `{"a":"notfound"}`,
+			expected: `[]`,
+		},
+		{
+			name:        "collection interpolation",
+			marshalMode: mongodb.JSONMarshalModeCanonical,
+			collection:  `${!json("col")}`,
+			message:     `{"col":"TestCollection","a":"foo"}`,
+			expected:    `[{"a":"foo","b":"bar","c":"baz","answer_to_everything":{"$numberInt":"42"}}]`,
+		},
+	} {
+		m := testMProc(t, port, tt.collection, fmt.Sprintf(`
+write_concern:
+  w: "1"
+  j: false
+  timeout: 100s
+operation: find-many
+filter_map: |
+  root.a = this.a
+json_marshal_mode: %v
+`, tt.marshalMode))
+
+		resMsgs, err := m.ProcessBatch(tCtx, service.MessageBatch{
+			service.NewMessage([]byte(tt.message)),
+		})
+		require.NoError(t, err)
+		require.Len(t, resMsgs, 1)
+
+		mBytes, err := resMsgs[0][0].AsBytes()
+		require.NoError(t, err)
+
+		jdopts := jsondiff.DefaultJSONOptions()
+		diff, explanation := jsondiff.Compare(mBytes, []byte(tt.expected), &jdopts)
+		if tt.name == "no documents found" {
+			assert.Equalf(t, jsondiff.FullMatch.String(), diff.String(), "%s: %s", tt.name, explanation)
+			continue
+		}
+		assert.Equalf(t, jsondiff.SupersetMatch.String(), diff.String(), "%s: %s", tt.name, explanation)
+	}
+}
+
+func testMongoDBProcessorUpdateMany(mongoClient *mongo.Client, port string, t *testing.T) {
+	tCtx := t.Context()
+	m := testMProc(t, port, "", `
+write_concern:
+  w: "1"
+  j: false
+  timeout: 100s
+operation: update-many
+document_map: |
+  root = { "$set": { "a": this.foo, "b": this.bar } }
+filter_map: |
+  root.a = this.foo
+`)
+
+	collection := mongoClient.Database("TestDB").Collection("TestCollection")
+
+	_, err := collection.InsertMany(t.Context(), []interface{}{
+		bson.M{"a": "foo_update", "b": "bar_update_old", "c": "c1"},
+		bson.M{"a": "foo_update", "b": "bar_update_old2", "c": "c2"},
+	})
+	assert.NoError(t, err)
+
+	resMsgs, err := m.ProcessBatch(tCtx, service.MessageBatch{
+		service.NewMessage([]byte(`{"foo":"foo_update","bar":"bar_update_new"}`)),
+	})
+	require.NoError(t, err)
+	require.Len(t, resMsgs, 1)
+	assertMessagesEqual(t, resMsgs[0], []string{
+		`{"foo":"foo_update","bar":"bar_update_new"}`,
+	})
+
+	// // Validate if records have been updated in the db
+	cursor, err := collection.Find(t.Context(), bson.M{"a": "foo_update", "b": "bar_update_new"})
+	assert.NoError(t, err)
+
+	var results []bson.M
+	err = cursor.All(t.Context(), &results)
+	assert.NoError(t, err)
+	assert.Len(t, results, 2)
+
+	for _, result := range results {
+		aVal := result["a"]
+		bVal := result["b"]
+		cVal := result["c"]
+
+		assert.Equal(t, "foo_update", aVal)
+		assert.Equal(t, "bar_update_new", bVal)
+		assert.Contains(t, []string{"c1", "c2"}, cVal)
 	}
 }

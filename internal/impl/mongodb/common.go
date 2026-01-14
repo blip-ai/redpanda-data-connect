@@ -140,6 +140,10 @@ const (
 	OperationAggregate Operation = "aggregate"
 	// OperationInvalid Invalid operation.
 	OperationInvalid Operation = "invalid"
+	// OperationUpdateMany Update many operation.
+	OperationUpdateMany Operation = "update-many"
+	// OperationFindMany Find many operation.
+	OperationFindMany Operation = "find-many"
 )
 
 func (op Operation) isDocumentAllowed() bool {
@@ -147,7 +151,8 @@ func (op Operation) isDocumentAllowed() bool {
 	case OperationInsertOne,
 		OperationReplaceOne,
 		OperationUpdateOne,
-		OperationAggregate:
+		OperationAggregate,
+		OperationUpdateMany:
 		return true
 	default:
 		return false
@@ -160,7 +165,9 @@ func (op Operation) isFilterAllowed() bool {
 		OperationDeleteMany,
 		OperationReplaceOne,
 		OperationUpdateOne,
-		OperationFindOne:
+		OperationFindOne,
+		OperationUpdateMany,
+		OperationFindMany:
 		return true
 	default:
 		return false
@@ -173,7 +180,9 @@ func (op Operation) isHintAllowed() bool {
 		OperationDeleteMany,
 		OperationReplaceOne,
 		OperationUpdateOne,
-		OperationFindOne:
+		OperationFindOne,
+		OperationUpdateMany,
+		OperationFindMany:
 		return true
 	default:
 		return false
@@ -207,6 +216,10 @@ func NewOperation(op string) Operation {
 		return OperationFindOne
 	case "aggregate":
 		return OperationAggregate
+	case "update-many":
+		return OperationUpdateMany
+	case "find-many":
+		return OperationFindMany
 	default:
 		return OperationInvalid
 	}
@@ -226,6 +239,8 @@ func processorOperationDocs(defaultOperation Operation) *service.ConfigField {
 		string(OperationUpdateOne),
 		string(OperationFindOne),
 		string(OperationAggregate),
+		string(OperationUpdateMany),
+		string(OperationFindMany),
 	).Description("The mongodb operation to perform.").
 		Default(string(defaultOperation))
 }
@@ -237,6 +252,7 @@ func outputOperationDocs(defaultOperation Operation) *service.ConfigField {
 		string(OperationDeleteMany),
 		string(OperationReplaceOne),
 		string(OperationUpdateOne),
+		string(OperationUpdateMany),
 	).Description("The mongodb operation to perform.").
 		Default(string(defaultOperation))
 }
@@ -248,7 +264,7 @@ func operationFromParsed(pConf *service.ParsedConfig) (operation Operation, err 
 	}
 
 	if operation = NewOperation(operationStr); operation == OperationInvalid {
-		err = fmt.Errorf("mongodb operation %q unknown: must be insert-one, delete-one, delete-many, replace-one, update-one or aggregate", operationStr)
+		err = fmt.Errorf("mongodb operation %q unknown: must be insert-one, delete-one, delete-many, replace-one, update-one, aggregate or update-many", operationStr)
 	}
 	return
 }
@@ -331,7 +347,7 @@ func writeMapsFields() []*service.ConfigField {
 	return []*service.ConfigField{
 		service.NewBloblangField(commonFieldDocumentMap).
 			Description("A bloblang map representing a document to store within MongoDB, expressed as https://www.mongodb.com/docs/manual/reference/mongodb-extended-json/[extended JSON in canonical form^]. The document map is required for the operations " +
-				"insert-one, replace-one, update-one and aggregate.").
+				"insert-one, replace-one, update-one, aggregate and update-many.").
 			Examples(mapExamples()...).
 			Default(""),
 		service.NewBloblangField(commonFieldFilterMap).
