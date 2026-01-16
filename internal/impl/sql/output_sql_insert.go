@@ -17,6 +17,7 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -41,7 +42,32 @@ func sqlInsertOutputConfig() *service.ConfigSpec {
 			Example("foo")).
 		Field(service.NewStringListField("columns").
 			Description("A list of columns to insert.").
-			Example([]string{"foo", "bar", "baz"})).
+			Example([]string{"foo", "bar", "baz"}).
+			Default([]string{})).
+		Field(service.NewAnyListField("data_types").
+			Description("The columns data types.").
+			Optional().
+			Example([]any{
+				map[string]any{
+					"name": "foo",
+					"type": "VARCHAR",
+				},
+				map[string]any{
+					"name": "bar",
+					"type": "DATETIME",
+					"datetime": map[string]any{
+						"format": "2006-01-02 15:04:05.999",
+					},
+				},
+				map[string]any{
+					"name": "baz",
+					"type": "DATE",
+					"date": map[string]any{
+						"format": "2006-01-02",
+					},
+				},
+			}).
+			Default([]any{})).
 		Field(service.NewBloblangField("args_mapping").
 			Description("A xref:guides:bloblang/about.adoc[Bloblang mapping] which should evaluate to an array of values matching in size to the number of columns specified.").
 			Example("root = [ this.cat.meow, this.doc.woofs[0] ]").
@@ -91,6 +117,12 @@ output:
 	return spec
 }
 
+type applyDataType func(arg any, column string, dataTypes map[string]any) (any, error)
+
+var applyDataTypeMap = map[string]applyDataType{
+	"mssql": applyMSSQLDataType,
+}
+
 func init() {
 	service.MustRegisterBatchOutput(
 		"sql_insert", sqlInsertOutputConfig(),
@@ -123,6 +155,9 @@ type sqlInsertOutput struct {
 
 	logger  *service.Logger
 	shutSig *shutdown.Signaller
+
+	columns   []string
+	dataTypes map[string]any
 }
 
 func newSQLInsertOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resources) (*sqlInsertOutput, error) {
@@ -155,6 +190,20 @@ func newSQLInsertOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resou
 	columns, err := conf.FieldStringList("columns")
 	if err != nil {
 		return nil, err
+	}
+	s.columns = columns
+
+	dataTypesField, err := conf.FieldAnyList("data_types")
+	if err != nil {
+		return nil, err
+	}
+	s.dataTypes = map[string]any{}
+	for _, dataTypeField := range dataTypesField {
+		field, err := dataTypeField.FieldAny()
+		if err != nil {
+			return nil, err
+		}
+		s.dataTypes[field.(map[string]any)["name"].(string)] = field
 	}
 
 	if conf.Contains("args_mapping") {
@@ -290,6 +339,19 @@ func (s *sqlInsertOutput) WriteBatch(ctx context.Context, batch service.MessageB
 		}
 
 		if tx == nil {
+			if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
+				if len(s.dataTypes) == len(args) {
+					for i, arg := range args {
+						newArg, err := applyDataTypeFn(arg, s.columns[i], s.dataTypes)
+						if err != nil {
+							return err
+						}
+						args[i] = newArg
+					}
+				} else {
+					return errors.New("number of data types must match number of columns")
+				}
+			}
 			insertBuilder = insertBuilder.Values(args...)
 		} else if _, err := stmt.Exec(args...); err != nil {
 			_ = tx.Rollback()

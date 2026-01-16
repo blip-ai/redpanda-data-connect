@@ -40,6 +40,34 @@ func sqlRawOutputConfig() *service.ConfigSpec {
 			Description("Whether to enable xref:configuration:interpolation.adoc#bloblang-queries[interpolation functions] in the query. Great care should be made to ensure your queries are defended against injection attacks.").
 			Advanced().
 			Default(false)).
+		Field(service.NewStringListField("columns").
+			Description("A list of columns to insert.").
+			Example([]string{"foo", "bar", "baz"}).
+			Default([]string{})).
+		Field(service.NewAnyListField("data_types").
+			Description("The columns data types.").
+			Optional().
+			Example([]any{
+				map[string]any{
+					"name": "foo",
+					"type": "VARCHAR",
+				},
+				map[string]any{
+					"name": "bar",
+					"type": "DATETIME",
+					"datetime": map[string]any{
+						"format": "2006-01-02 15:04:05.999",
+					},
+				},
+				map[string]any{
+					"name": "baz",
+					"type": "DATE",
+					"date": map[string]any{
+						"format": "2006-01-02",
+					},
+				},
+			}).
+			Default([]any{})).
 		Field(service.NewBloblangField("args_mapping").
 			Description("An optional xref:guides:bloblang/about.adoc[Bloblang mapping] which should evaluate to an array of values matching in size to the number of placeholder arguments in the field `query`.").
 			Example("root = [ this.cat.meow, this.doc.woofs[0] ]").
@@ -136,6 +164,9 @@ type sqlRawOutput struct {
 
 	logger  *service.Logger
 	shutSig *shutdown.Signaller
+
+	columns   []string
+	dataTypes map[string]any
 }
 
 func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resources) (*sqlRawOutput, error) {
@@ -205,7 +236,25 @@ func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resource
 		argsConverter = func(v []any) []any { return v }
 	}
 
-	return newSQLRawOutput(mgr.Logger(), driverStr, dsnStr, queries, argsConverter, connSettings), nil
+	columns, err := conf.FieldStringList("columns")
+	if err != nil {
+		return nil, err
+	}
+
+	dataTypesField, err := conf.FieldAnyList("data_types")
+	if err != nil {
+		return nil, err
+	}
+	dataTypes := map[string]any{}
+	for _, dataTypeField := range dataTypesField {
+		field, err := dataTypeField.FieldAny()
+		if err != nil {
+			return nil, err
+		}
+		dataTypes[field.(map[string]any)["name"].(string)] = field
+	}
+
+	return newSQLRawOutput(mgr.Logger(), driverStr, dsnStr, queries, argsConverter, connSettings, columns, dataTypes), nil
 }
 
 func newSQLRawOutput(
@@ -214,6 +263,8 @@ func newSQLRawOutput(
 	queries []rawQueryStatement,
 	argsConverter argsConverter,
 	connSettings *connSettings,
+	columns []string,
+	dataTypes map[string]any,
 ) *sqlRawOutput {
 	return &sqlRawOutput{
 		logger:        logger,
@@ -223,6 +274,8 @@ func newSQLRawOutput(
 		queries:       queries,
 		argsConverter: argsConverter,
 		connSettings:  connSettings,
+		columns:       columns,
+		dataTypes:     dataTypes,
 	}
 }
 
@@ -309,6 +362,21 @@ func (s *sqlRawOutput) WriteBatch(ctx context.Context, batch service.MessageBatc
 				if args, ok = iargs.([]any); !ok {
 					return fmt.Errorf("mapping returned non-array result: %T", iargs)
 				}
+
+				if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
+					if len(s.dataTypes) == len(args) {
+						for i, arg := range args {
+							newArg, err := applyDataTypeFn(arg, s.columns[i], s.dataTypes)
+							if err != nil {
+								return err
+							}
+							args[i] = newArg
+						}
+					} else {
+						return errors.New("number of data types must match number of columns")
+					}
+				}
+
 				args = s.argsConverter(args)
 			}
 

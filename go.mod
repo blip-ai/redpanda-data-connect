@@ -79,6 +79,7 @@ require (
 	github.com/couchbase/gocb/v2 v2.11.1
 	github.com/cyborginc/cyborgdb-go v0.12.0
 	github.com/databricks/databricks-sql-go v1.9.0
+	github.com/denisenkom/go-mssqldb v0.12.0
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/dop251/goja v0.0.0-20250630131328-58d95d85e994
 	github.com/dop251/goja_nodejs v0.0.0-20250409162600-f7acab6894b0
@@ -402,7 +403,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
+	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
