@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	mssql "github.com/denisenkom/go-mssqldb"
 	"github.com/golang-sql/civil"
+	mssql "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/assert"
 )
 

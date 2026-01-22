@@ -37,11 +37,9 @@ const (
 	csoFieldContentType     = "content_type"
 	csoFieldContentEncoding = "content_encoding"
 	csoFieldChunkSize       = "chunk_size"
-	csoFieldMaxInFlight     = "max_in_flight"
 	csoFieldBatching        = "batching"
 	csoFieldCollisionMode   = "collision_mode"
 	csoFieldTimeout         = "timeout"
-	csoFieldCredentials     = "credentials"
 
 	// GCPCloudStorageErrorIfExistsCollisionMode - error-if-exists.
 	GCPCloudStorageErrorIfExistsCollisionMode = "error-if-exists"
@@ -175,7 +173,7 @@ output:
 				Example("1s").
 				Example("500ms").
 				Default("3s"),
-						service.NewOutputMaxInFlightField().
+			service.NewOutputMaxInFlightField().
 				Description("The maximum number of message batches to have in flight at a given time. Increase this to improve throughput."),
 			service.NewBatchPolicyField(csoFieldBatching),
 		).

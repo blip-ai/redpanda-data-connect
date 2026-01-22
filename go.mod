@@ -4,6 +4,8 @@ go 1.25.6
 
 replace github.com/99designs/keyring => github.com/Jeffail/keyring v1.2.3
 
+replace github.com/redpanda-data/benthos/v4 => github.com/stilingue-inteligencia-artificial/benthos/v4 v4.63.0-blip.1
+
 ignore (
 	./bin
 	./config
@@ -79,7 +81,6 @@ require (
 	github.com/couchbase/gocb/v2 v2.11.1
 	github.com/cyborginc/cyborgdb-go v0.12.0
 	github.com/databricks/databricks-sql-go v1.9.0
-	github.com/denisenkom/go-mssqldb v0.12.0
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/dop251/goja v0.0.0-20250630131328-58d95d85e994
 	github.com/dop251/goja_nodejs v0.0.0-20250409162600-f7acab6894b0

@@ -31,7 +31,6 @@ import (
 
 const (
 	mpFieldCollection      = "collection"
-	mpFieldWriteConcern    = "write_concern"
 	mpFieldJSONMarshalMode = "json_marshal_mode"
 )
 
@@ -269,7 +268,7 @@ func (m *Processor) ProcessBatch(ctx context.Context, batch service.MessageBatch
 
 			m.log.Debugf("Got %d documents from '%s' collection", len(decoded), collectionStr)
 
-			var rawMessages = make([]json.RawMessage, 0)
+			rawMessages := make([]json.RawMessage, 0)
 			for _, bsonObj := range decoded {
 				data, err := bson.MarshalExtJSON(bsonObj, m.marshalMode == JSONMarshalModeCanonical, false)
 				if err != nil {

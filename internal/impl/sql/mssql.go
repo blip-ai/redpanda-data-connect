@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	mssql "github.com/denisenkom/go-mssqldb"
 	"github.com/golang-sql/civil"
+	mssql "github.com/microsoft/go-mssqldb"
 )
 
 func applyMSSQLDataType(arg any, column string, dataTypes map[string]any) (any, error) {
