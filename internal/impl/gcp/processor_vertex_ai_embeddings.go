@@ -33,7 +33,9 @@ import (
 
 const (
 	vaiepFieldProject         = "project"
+	vaiepFieldCredentials     = "credentials"
 	vaiepFieldCredentialsJSON = "credentials_json"
+	vaiepFieldCredentialsPath = "credentials_path"
 	vaiepFieldModel           = "model"
 	vaiepFieldLocation        = "location"
 	vaiepFieldText            = "text"
@@ -60,10 +62,6 @@ For more information, see the https://cloud.google.com/vertex-ai/generative-ai/d
 		Fields(
 			service.NewStringField(vaiepFieldProject).
 				Description("GCP project ID to use"),
-			service.NewStringField(vaiepFieldCredentialsJSON).
-				Description("An optional field to set google Service Account Credentials json.").
-				Secret().
-				Optional(),
 			service.NewStringField(vaiepFieldLocation).
 				Description("The location of the model.").
 				Default("us-central1"),
@@ -87,7 +85,8 @@ For more information, see the https://cloud.google.com/vertex-ai/generative-ai/d
 			service.NewIntField(vaiepFieldDims).
 				Description("The maximum length for the output embedding size. If set, the output embeddings will be truncated to this size.").
 				Optional(),
-		)
+		).
+		Fields(CredentialsFields()...)
 }
 
 func newVertexAIEmbeddingsProcessor(conf *service.ParsedConfig, _ *service.Resources) (p service.Processor, err error) {
@@ -106,13 +105,13 @@ func newVertexAIEmbeddingsProcessor(conf *service.ParsedConfig, _ *service.Resou
 	opts := []option.ClientOption{
 		option.WithEndpoint(location + "-aiplatform.googleapis.com:443"),
 	}
-	if conf.Contains(vaiepFieldCredentialsJSON) {
-		var jsonObject string
-		jsonObject, err = conf.FieldString(vaiepFieldCredentialsJSON)
+	if conf.Contains(vaiepFieldCredentials, vaiepFieldCredentialsJSON, vaiepFieldCredentialsPath) {
+		credentials := []option.ClientOption{}
+		credentials, err = GetGoogleCloudCredentials(conf)
 		if err != nil {
 			return
 		}
-		opts = append(opts, option.WithCredentialsJSON([]byte(jsonObject)))
+		opts = append(opts, credentials...)
 	}
 	proc.client, err = aiplatform.NewPredictionClient(ctx, opts...)
 	if err != nil {
