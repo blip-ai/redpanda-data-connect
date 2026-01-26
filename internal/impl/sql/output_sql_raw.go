@@ -275,6 +275,14 @@ func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resource
 	if hasColumns && len(columns) != len(dataTypes) {
 		return nil, fmt.Errorf("number of columns (%d) must match number of data_types (%d)", len(columns), len(dataTypes))
 	}
+	// Validate that each column has a corresponding data type entry
+	if hasColumns {
+		for _, col := range columns {
+			if _, exists := dataTypes[col]; !exists {
+				return nil, fmt.Errorf("column %q does not have a corresponding entry in data_types", col)
+			}
+		}
+	}
 
 	return newSQLRawOutput(mgr.Logger(), driverStr, dsnStr, queries, argsConverter, connSettings, columns, dataTypes), nil
 }

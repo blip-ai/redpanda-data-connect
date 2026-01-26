@@ -4,8 +4,7 @@ go 1.25.6
 
 replace github.com/99designs/keyring => github.com/Jeffail/keyring v1.2.3
 
-// replace github.com/redpanda-data/benthos/v4 => github.com/stilingue-inteligencia-artificial/benthos/v4 v4.63.0-blip.1
-replace github.com/redpanda-data/benthos/v4 => ../benthos-blip
+replace github.com/redpanda-data/benthos/v4 => github.com/stilingue-inteligencia-artificial/benthos/v4 v4.63.0-blip.1
 
 ignore (
 	./bin

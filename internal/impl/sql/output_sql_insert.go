@@ -355,10 +355,10 @@ func (s *sqlInsertOutput) WriteBatch(ctx context.Context, batch service.MessageB
 				if len(s.dataTypes) != len(s.columns) {
 					return errors.New("number of data_types must match number of columns")
 				}
+				if len(args) != len(s.columns) {
+					return fmt.Errorf("args mapping returned %d values but only %d columns specified", len(args), len(s.columns))
+				}
 				for i, arg := range args {
-					if i >= len(s.columns) {
-						return fmt.Errorf("args mapping returned %d values but only %d columns specified", len(args), len(s.columns))
-					}
 					if _, exists := s.dataTypes[s.columns[i]]; !exists {
 						return fmt.Errorf("column %q specified but not found in data_types", s.columns[i])
 					}

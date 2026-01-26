@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -513,8 +512,7 @@ func (a *azureBlobStorage) ReadBatch(ctx context.Context) (msg service.MessageBa
 			a.log.Warnf("error downloading blob: %v", err)
 			err = service.ErrEndOfInput
 		} else if errors.Is(err, context.Canceled) ||
-			errors.Is(err, context.DeadlineExceeded) ||
-			(err != nil && strings.HasSuffix(err.Error(), "context canceled")) {
+			errors.Is(err, context.DeadlineExceeded) {
 			err = errors.New("action timed out")
 		}
 	}()

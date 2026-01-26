@@ -64,6 +64,33 @@ type esoConfig struct {
 	scriptParamsBlobl *bloblang.Executor
 }
 
+// esoConfigFromParsed parses the Elasticsearch output configuration from a service.ParsedConfig
+// and returns an esoConfig struct with all necessary client options and settings.
+//
+// The function extracts and configures:
+//   - URLs: Elasticsearch cluster URLs (comma-separated values are split)
+//   - Sniffing and health check settings
+//   - Authentication: Basic auth (username/password) or API key based authentication
+//   - TLS configuration with custom certificates
+//   - HTTP client with configurable timeout
+//   - AWS authentication options
+//   - GZIP compression settings
+//   - Retry backoff strategy
+//   - Action parameters: action, ID, index, pipeline, routing, type
+//   - Conflict retry settings
+//   - Script parameters: stored script and script parameters (Bloblang)
+//
+// Environment Variables:
+//   - BENTHOS_ELASTICSEARCH_LOG_REQUESTS: When set to "true", enables request/response
+//     logging for Elasticsearch operations using a custom LoggerRoundTripper
+//
+// Parameters:
+//   - pConf: Parsed configuration containing all Elasticsearch output settings
+//   - logger: Service logger used for logging HTTP requests when debug mode is enabled
+//
+// Returns:
+//   - conf: Populated esoConfig struct with all Elasticsearch client options
+//   - err: Error if any configuration field fails to parse or validate
 func esoConfigFromParsed(pConf *service.ParsedConfig, logger *service.Logger) (conf esoConfig, err error) {
 	var tmpURLs []string
 	if tmpURLs, err = pConf.FieldStringList(esoFieldURLs); err != nil {
@@ -602,8 +629,8 @@ func (e *Output) buildBulkableRequest(p *pendingBulkIndex) (elastic.BulkableRequ
 
 func addScript(p *pendingBulkIndex, r *elastic.BulkUpdateRequest) *elastic.BulkUpdateRequest {
 	script := elastic.NewScriptStored(p.StoredScript)
-	if p.ScriptParams != nil {
-		script.Params(p.ScriptParams.(map[string]interface{}))
+	if params, ok := p.ScriptParams.(map[string]any); ok {
+		script.Params(params)
 	}
 	return r.Script(script)
 }

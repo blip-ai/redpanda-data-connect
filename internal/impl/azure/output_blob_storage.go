@@ -258,12 +258,12 @@ func (a *azureBlobStorageWriter) getUploadBody(m *service.Message) (io.ReadSeeke
 	}
 
 	if localFilePath != "" {
-		fileBytes, err := os.ReadFile(localFilePath)
+		file, err := os.Open(localFilePath)
 		if err != nil {
-			return nil, fmt.Errorf("local file read error: %w", err)
+			return nil, fmt.Errorf("local file open error: %w", err)
 		}
 
-		return bytes.NewReader(fileBytes), nil
+		return file, nil
 	}
 
 	mBytes, err := m.AsBytes()

@@ -95,5 +95,8 @@ func parseMSSQLDate(arg any, column string, fieldDataType map[string]any) (any, 
 }
 
 func toString(arg any) string {
+	if arg == nil {
+		return ""
+	}
 	return fmt.Sprintf("%v", arg)
 }
