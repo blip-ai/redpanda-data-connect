@@ -683,7 +683,7 @@ filter_map: |
 		`{"foo":"foo_update","bar":"bar_update_new"}`,
 	})
 
-	// // Validate if records have been updated in the db
+	// Validate if records have been updated in the db
 	cursor, err := collection.Find(t.Context(), bson.M{"a": "foo_update", "b": "bar_update_new"})
 	assert.NoError(t, err)
 

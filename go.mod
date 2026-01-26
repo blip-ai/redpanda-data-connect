@@ -4,7 +4,8 @@ go 1.25.6
 
 replace github.com/99designs/keyring => github.com/Jeffail/keyring v1.2.3
 
-replace github.com/redpanda-data/benthos/v4 => github.com/stilingue-inteligencia-artificial/benthos/v4 v4.63.0-blip.1
+// replace github.com/redpanda-data/benthos/v4 => github.com/stilingue-inteligencia-artificial/benthos/v4 v4.63.0-blip.1
+replace github.com/redpanda-data/benthos/v4 => ../benthos-blip
 
 ignore (
 	./bin
@@ -182,11 +183,11 @@ require (
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.15.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.15.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.33.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.38.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.38.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.38.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.38.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.39.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.39.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.39.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.39.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.39.0
 	go.opentelemetry.io/otel/log v0.15.0
 	go.opentelemetry.io/otel/sdk v1.39.0
 	go.opentelemetry.io/otel/sdk/log v0.15.0

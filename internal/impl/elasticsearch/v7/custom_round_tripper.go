@@ -24,7 +24,10 @@ func (c *LoggerRoundTripper) transport() http.RoundTripper {
 func (c *LoggerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	var requestBody string
 	if req.Body != nil {
-		bodyBytes, _ := io.ReadAll(req.Body)
+		bodyBytes, err := io.ReadAll(req.Body)
+		if err != nil {
+			c.Logger.With("error", err).Warn("Failed to read request body")
+		}
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		requestBody = string(bodyBytes)
 	}
@@ -37,7 +40,10 @@ func (c *LoggerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 	var responseBody string
 	var status int
 	if resp.Body != nil {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.Logger.With("error", err).Warn("Failed to read response body")
+		}
 		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		status = resp.StatusCode
 		responseBody = string(bodyBytes)

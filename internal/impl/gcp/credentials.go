@@ -28,12 +28,12 @@ const (
 func CredentialsFields() []*service.ConfigField {
 	return []*service.ConfigField{
 		service.NewStringField(credentialsPathField).
-			Description("The path for custom credentials of Google Cloud.").
+			Description("The path for custom credentials of Google Cloud. This is checked first and takes precedence over other credential methods.").
 			Optional().
 			Advanced().
 			Secret(),
 		service.NewStringField(credentialsJSONField).
-			Description("An optional field to set Google Service Account Credentials json.").
+			Description("An optional field to set Google Service Account Credentials json. This is checked second, after credentials_path.").
 			Optional().
 			Default("").
 			Secret(),
@@ -77,7 +77,7 @@ func CredentialsFields() []*service.ConfigField {
 				Description("The URL of the service account's X.509 public key certificate. Typically: https://www.googleapis.com/robot/v1/metadata/x509/your-service-account-email%40your-project-id.iam.gserviceaccount.com").
 				Advanced().
 				Secret()).
-			Description("Optional manual configuration of Google Cloud credentials to use. More information can be found [in this document](/docs/guides/cloud/gcp).").
+			Description("Optional manual configuration of Google Cloud credentials to use. This is checked last, after credentials_path and credentials_json. More information can be found [in this document](/docs/guides/cloud/gcp).").
 			Optional().
 			Advanced().
 			Secret(),

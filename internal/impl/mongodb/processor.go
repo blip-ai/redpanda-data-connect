@@ -253,14 +253,14 @@ func (m *Processor) ProcessBatch(ctx context.Context, batch service.MessageBatch
 
 			var cursor *mongo.Cursor
 			var decoded []any
-			cursor, err = collection.Find(context.Background(), filterJSON, findOptions)
+			cursor, err = collection.Find(ctx, filterJSON, findOptions)
 			if err != nil {
 				m.log.Errorf("Error executing mongo db cursor, filter = %v: %s", filterJSON, err)
 				return err
 			}
-			defer cursor.Close(context.Background())
+			defer cursor.Close(ctx)
 
-			err = cursor.All(context.Background(), &decoded)
+			err = cursor.All(ctx, &decoded)
 			if err != nil {
 				m.log.Errorf("Error decoding mongo db cursor result, filter = %v: %s", filterJSON, err)
 				return err

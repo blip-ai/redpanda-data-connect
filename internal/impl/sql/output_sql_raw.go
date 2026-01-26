@@ -41,11 +41,11 @@ func sqlRawOutputConfig() *service.ConfigSpec {
 			Advanced().
 			Default(false)).
 		Field(service.NewStringListField("columns").
-			Description("A list of columns to insert.").
+			Description("A list of columns to insert. When `data_types` is configured, this field must also be provided and must correspond positionally to the entries in `data_types`.").
 			Example([]string{"foo", "bar", "baz"}).
-			Default([]string{})).
+			Optional()).
 		Field(service.NewAnyListField("data_types").
-			Description("The columns data types.").
+			Description("The data types for the configured `columns`. This field must be used together with `columns`, and each entry should describe the column at the same index in `columns`.").
 			Optional().
 			Example([]any{
 				map[string]any{
@@ -251,7 +251,29 @@ func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resource
 		if err != nil {
 			return nil, err
 		}
-		dataTypes[field.(map[string]any)["name"].(string)] = field
+		fieldMap, ok := field.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid data_types entry: expected object, got %T", field)
+		}
+		nameVal, ok := fieldMap["name"]
+		if !ok {
+			return nil, fmt.Errorf("invalid data_types entry: missing required field 'name'")
+		}
+		name, ok := nameVal.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid data_types entry: field 'name' must be a string, got %T", nameVal)
+		}
+		dataTypes[name] = field
+	}
+
+	// Validate that columns and data_types are provided together
+	hasColumns := len(columns) > 0
+	hasDataTypes := len(dataTypes) > 0
+	if hasColumns != hasDataTypes {
+		return nil, errors.New("fields 'columns' and 'data_types' must be provided together or both omitted")
+	}
+	if hasColumns && len(columns) != len(dataTypes) {
+		return nil, fmt.Errorf("number of columns (%d) must match number of data_types (%d)", len(columns), len(dataTypes))
 	}
 
 	return newSQLRawOutput(mgr.Logger(), driverStr, dsnStr, queries, argsConverter, connSettings, columns, dataTypes), nil
@@ -364,16 +386,20 @@ func (s *sqlRawOutput) WriteBatch(ctx context.Context, batch service.MessageBatc
 				}
 
 				if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
-					if len(s.dataTypes) == len(args) {
-						for i, arg := range args {
-							newArg, err := applyDataTypeFn(arg, s.columns[i], s.dataTypes)
-							if err != nil {
-								return err
-							}
-							args[i] = newArg
+					if len(s.columns) != len(args) {
+						return errors.New("number of arguments must match number of columns")
+					}
+					for i, arg := range args {
+						colName := s.columns[i]
+						dataType, exists := s.dataTypes[colName]
+						if !exists {
+							return fmt.Errorf("no data type defined for column %q", colName)
 						}
-					} else {
-						return errors.New("number of data types must match number of columns")
+						newArg, err := applyDataTypeFn(arg, colName, dataType.(map[string]any))
+						if err != nil {
+							return err
+						}
+						args[i] = newArg
 					}
 				}
 

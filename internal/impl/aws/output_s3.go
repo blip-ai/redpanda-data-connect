@@ -546,11 +546,11 @@ func (a *amazonS3Writer) getUploadBody(m *service.Message) (io.Reader, error) {
 	}
 
 	if localFilePath != "" {
-		file, err := os.Open(localFilePath)
+		fileBytes, err := os.ReadFile(localFilePath)
 		if err != nil {
 			return nil, fmt.Errorf("local file read error: %w", err)
 		}
-		return file, nil
+		return bytes.NewReader(fileBytes), nil
 	}
 
 	mBytes, err := m.AsBytes()
