@@ -27,6 +27,7 @@ func (c *LoggerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		bodyBytes, err := io.ReadAll(req.Body)
 		if err != nil {
 			c.Logger.With("error", err).Warn("Failed to read request body")
+			return nil, err
 		}
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		requestBody = string(bodyBytes)
@@ -43,6 +44,7 @@ func (c *LoggerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			c.Logger.With("error", err).Warn("Failed to read response body")
+			return nil, err
 		}
 		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		status = resp.StatusCode

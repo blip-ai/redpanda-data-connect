@@ -350,25 +350,26 @@ func (s *sqlInsertOutput) WriteBatch(ctx context.Context, batch service.MessageB
 			args = s.argsConverter(args)
 		}
 
-		if tx == nil {
-			if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
-				if len(s.dataTypes) != len(s.columns) {
-					return errors.New("number of data_types must match number of columns")
-				}
-				if len(args) != len(s.columns) {
-					return fmt.Errorf("args mapping returned %d values but only %d columns specified", len(args), len(s.columns))
-				}
-				for i, arg := range args {
-					if _, exists := s.dataTypes[s.columns[i]]; !exists {
-						return fmt.Errorf("column %q specified but not found in data_types", s.columns[i])
-					}
-					newArg, err := applyDataTypeFn(arg, s.columns[i], s.dataTypes)
-					if err != nil {
-						return err
-					}
-					args[i] = newArg
-				}
+		if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
+			if len(s.dataTypes) != len(s.columns) {
+				return errors.New("number of data_types must match number of columns")
 			}
+			if len(args) != len(s.columns) {
+				return fmt.Errorf("args mapping returned %d values but only %d columns specified", len(args), len(s.columns))
+			}
+			for i, arg := range args {
+				if _, exists := s.dataTypes[s.columns[i]]; !exists {
+					return fmt.Errorf("column %q specified but not found in data_types", s.columns[i])
+				}
+				newArg, err := applyDataTypeFn(arg, s.columns[i], s.dataTypes)
+				if err != nil {
+					return err
+				}
+				args[i] = newArg
+			}
+		}
+
+		if tx == nil {
 			insertBuilder = insertBuilder.Values(args...)
 		} else if _, err := stmt.Exec(args...); err != nil {
 			_ = tx.Rollback()

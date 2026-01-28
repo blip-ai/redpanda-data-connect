@@ -35,7 +35,8 @@ func sqlRawOutputConfig() *service.ConfigSpec {
 		Field(driverField).
 		Field(dsnField).
 		Field(rawQueryField().
-			Example("INSERT INTO footable (foo, bar, baz) VALUES (?, ?, ?);").Optional()).
+			Example("INSERT INTO footable (foo, bar, baz) VALUES (?, ?, ?);").
+			Optional()).
 		Field(service.NewBoolField("unsafe_dynamic_query").
 			Description("Whether to enable xref:configuration:interpolation.adoc#bloblang-queries[interpolation functions] in the query. Great care should be made to ensure your queries are defended against injection attacks.").
 			Advanced().
@@ -245,6 +246,7 @@ func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resource
 	if err != nil {
 		return nil, err
 	}
+
 	dataTypes := map[string]any{}
 	for _, dataTypeField := range dataTypesField {
 		field, err := dataTypeField.FieldAny()
@@ -399,11 +401,11 @@ func (s *sqlRawOutput) WriteBatch(ctx context.Context, batch service.MessageBatc
 					}
 					for i, arg := range args {
 						colName := s.columns[i]
-						dataType, exists := s.dataTypes[colName]
+						_, exists := s.dataTypes[colName]
 						if !exists {
 							return fmt.Errorf("no data type defined for column %q", colName)
 						}
-						newArg, err := applyDataTypeFn(arg, colName, dataType.(map[string]any))
+						newArg, err := applyDataTypeFn(arg, colName, s.dataTypes)
 						if err != nil {
 							return err
 						}

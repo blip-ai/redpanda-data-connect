@@ -264,7 +264,7 @@ func operationFromParsed(pConf *service.ParsedConfig) (operation Operation, err 
 	}
 
 	if operation = NewOperation(operationStr); operation == OperationInvalid {
-		err = fmt.Errorf("mongodb operation %q unknown: must be insert-one, delete-one, delete-many, replace-one, update-one, aggregate or update-many", operationStr)
+		err = fmt.Errorf("mongodb operation %q unknown: must be insert-one, delete-one, delete-many, replace-one, update-one, find-one, aggregate, update-many or find-many", operationStr)
 	}
 	return
 }

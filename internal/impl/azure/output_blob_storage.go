@@ -105,7 +105,7 @@ If the `+"`storage_connection_string`"+` does not contain the `+"`AccountName`"+
 				Example(`${!counter()}-${!timestamp_unix_nano()}.json`).
 				Example(`${!meta("kafka_key")}.json`).
 				Example(`${!json("doc.namespace")}/${!json("doc.id")}.json`).
-				Default(`${!count("files")}-${!timestamp_unix_nano()}.txt`),
+				Default(`${!counter()}-${!timestamp_unix_nano()}.txt`),
 			service.NewInterpolatedStringField(bsoFieldLocalFilePath).
 				Description("The path of the local file to upload.").
 				Example(`/tmp/file.json`).
