@@ -105,12 +105,12 @@ func newVertexAIEmbeddingsProcessor(conf *service.ParsedConfig, _ *service.Resou
 	opts := []option.ClientOption{
 		option.WithEndpoint(location + "-aiplatform.googleapis.com:443"),
 	}
-	if conf.Contains(vaiepFieldCredentials, vaiepFieldCredentialsJSON, vaiepFieldCredentialsPath) {
-		credentials := []option.ClientOption{}
-		credentials, err = GetGoogleCloudCredentials(conf)
-		if err != nil {
-			return
-		}
+	credentials, credErr := GetGoogleCloudCredentials(conf)
+	if credErr != nil {
+		err = credErr
+		return
+	}
+	if len(credentials) > 0 {
 		opts = append(opts, credentials...)
 	}
 	proc.client, err = aiplatform.NewPredictionClient(ctx, opts...)

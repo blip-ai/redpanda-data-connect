@@ -45,6 +45,7 @@ output:
     storage_sas_token: ""
     container: messages-${!timestamp("2006")} # No default (required)
     path: ${!counter()}-${!timestamp_unix_nano()}.txt
+    local_file_path: ""
     max_in_flight: 64
 ```
 
@@ -64,6 +65,7 @@ output:
     storage_sas_token: ""
     container: messages-${!timestamp("2006")} # No default (required)
     path: ${!counter()}-${!timestamp_unix_nano()}.txt
+    local_file_path: ""
     blob_type: BLOCK
     public_access_level: PRIVATE
     max_in_flight: 64
@@ -106,6 +108,11 @@ The storage account to access. This field is ignored if `storage_connection_stri
 === `storage_access_key`
 
 The storage account access key. This field is ignored if `storage_connection_string` is set.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
 
 
 *Type*: `string`
@@ -115,6 +122,11 @@ The storage account access key. This field is ignored if `storage_connection_str
 === `storage_connection_string`
 
 A storage account connection string. This field is required if `storage_account` and `storage_access_key` / `storage_sas_token` are not set.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
 
 
 *Type*: `string`
@@ -124,6 +136,11 @@ A storage account connection string. This field is required if `storage_account`
 === `storage_sas_token`
 
 The storage account SAS token. This field is ignored if `storage_connection_string` or `storage_access_key` are set.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
 
 
 *Type*: `string`
@@ -163,6 +180,22 @@ path: ${!counter()}-${!timestamp_unix_nano()}.json
 path: ${!meta("kafka_key")}.json
 
 path: ${!json("doc.namespace")}/${!json("doc.id")}.json
+```
+
+=== `local_file_path`
+
+The path of the local file to upload.
+This field supports xref:configuration:interpolation.adoc#bloblang-queries[interpolation functions].
+
+
+*Type*: `string`
+
+*Default*: `""`
+
+```yml
+# Examples
+
+local_file_path: /tmp/file.json
 ```
 
 === `blob_type`

@@ -232,7 +232,7 @@ sniff: false
 	wg.Wait()
 
 	for id, exp := range docs {
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("new_index_parallel_writes").
 			Type("_doc").
@@ -248,7 +248,7 @@ sniff: false
 	}
 }
 
-func testElasticErrorHandling(urls []string, client *elastic.Client, t *testing.T) {
+func testElasticErrorHandling(urls []string, _ *elastic.Client, t *testing.T) {
 	ctx, done := context.WithTimeout(context.Background(), time.Second*30)
 	defer done()
 
@@ -307,7 +307,7 @@ sniff: false
 	}
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("foo-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").
@@ -353,7 +353,7 @@ sniff: false
 	}
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("bar-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").
@@ -400,7 +400,7 @@ sniff: false
 
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("baz-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").
@@ -449,7 +449,7 @@ sniff: false
 
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("buz-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").
@@ -474,7 +474,7 @@ sniff: false
 
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("buz-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").
@@ -483,9 +483,9 @@ sniff: false
 		require.NoError(t, err)
 
 		partAction, _ := testBatch[i].MetaGet("elastic_action")
-		if partAction == "deleted" && get.Found {
+		if partAction == "delete" && get.Found {
 			t.Errorf("document %v found when it should have been deleted", i)
-		} else if partAction != "deleted" && !get.Found {
+		} else if partAction != "delete" && !get.Found {
 			t.Errorf("document %v was not found", i)
 		}
 	}
@@ -525,7 +525,7 @@ sniff: false
 	for i := 0; i < 2; i++ {
 		index, _ := testBatch[i].MetaGet("index")
 
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index(index).
 			Type("_doc").
@@ -561,7 +561,7 @@ sniff: false
 	}
 	require.NoError(t, m2.WriteBatch(ctx, testBatch))
 
-	// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+	//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 	get, err := client.Get().
 		Index("test_conn_index").
 		Type("_doc").
@@ -593,7 +593,9 @@ func testElasticBatchUpsertWithStoredScript(urls []string, client *elastic.Clien
 	_, err := client.PutScript().Id("stored_script").BodyJson(body).Do(ctx)
 	require.NoError(t, err)
 
-	defer client.DeleteScript()
+	defer func() {
+		_, _ = client.DeleteScript().Id("stored_script").Do(ctx)
+	}()
 
 	m := outputFromConf(t, `
 index: ${! @index }
@@ -626,7 +628,7 @@ script_params: |
 
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("baz-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").
@@ -706,7 +708,7 @@ script_params: |
 
 	for i := 0; i < N; i++ {
 		id := fmt.Sprintf("baz-%v", i+1)
-		// nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
+		//nolint:staticcheck // Ignore SA1019 Type is deprecated warning for .Index()
 		get, err := client.Get().
 			Index("test_conn_index").
 			Type("_doc").

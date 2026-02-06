@@ -486,6 +486,11 @@ func (a *amazonS3Writer) WriteBatch(wctx context.Context, msg service.MessageBat
 		if err != nil {
 			return err
 		}
+		if rc, ok := uploadBody.(io.ReadCloser); ok {
+			defer func() {
+				_ = rc.Close()
+			}()
+		}
 
 		uploadInput := &s3.PutObjectInput{
 			Bucket:                  &a.conf.Bucket,

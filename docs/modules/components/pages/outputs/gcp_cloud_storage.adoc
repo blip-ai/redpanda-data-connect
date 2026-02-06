@@ -44,13 +44,13 @@ output:
     content_type: application/octet-stream
     collision_mode: overwrite
     timeout: 3s
-    credentials_json: ""
     max_in_flight: 64
     batching:
       count: 0
       byte_size: 0
       period: ""
       check: ""
+    credentials_json: ""
 ```
 
 --
@@ -70,7 +70,6 @@ output:
     collision_mode: overwrite
     chunk_size: 16777216
     timeout: 3s
-    credentials_json: ""
     max_in_flight: 64
     batching:
       count: 0
@@ -78,6 +77,19 @@ output:
       period: ""
       check: ""
       processors: [] # No default (optional)
+    credentials_path: "" # No default (optional)
+    credentials_json: ""
+    credentials:
+      type: service_account
+      project_id: "" # No default (required)
+      private_key_id: "" # No default (required)
+      private_key: "" # No default (required)
+      client_email: "" # No default (required)
+      client_id: "" # No default (required)
+      auth_uri: https://accounts.google.com/o/oauth2/auth
+      token_uri: https://oauth2.googleapis.com/token
+      auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+      client_x509_cert_url: "" # No default (required)
 ```
 
 --
@@ -229,21 +241,6 @@ timeout: 1s
 timeout: 500ms
 ```
 
-=== `credentials_json`
-
-An optional field to set Google Service Account Credentials json.
-[CAUTION]
-====
-This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
-====
-
-This field supports xref:configuration:interpolation.adoc#bloblang-queries[interpolation functions].
-
-
-*Type*: `string`
-
-*Default*: `""`
-
 === `max_in_flight`
 
 The maximum number of message batches to have in flight at a given time. Increase this to improve throughput.
@@ -354,5 +351,154 @@ processors:
   - archive:
       format: json_array
 ```
+
+=== `credentials_path`
+
+The path for custom credentials of Google Cloud. This is checked first and takes precedence over other credential methods.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
+
+=== `credentials_json`
+
+An optional field to set Google Service Account Credentials json. This is checked second, after credentials_path.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
+*Default*: `""`
+
+=== `credentials`
+
+Optional manual configuration of Google Cloud credentials to use. This is checked last, after credentials_path and credentials_json. More information can be found [in this document](/docs/guides/cloud/gcp).
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `object`
+
+
+=== `credentials.type`
+
+The type of the account (always "service_account" for a service account).
+
+
+*Type*: `string`
+
+*Default*: `"service_account"`
+
+=== `credentials.project_id`
+
+The ID of your Google Cloud project.
+
+
+*Type*: `string`
+
+
+=== `credentials.private_key_id`
+
+The ID of your private key.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
+
+=== `credentials.private_key`
+
+Your private key.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
+
+=== `credentials.client_email`
+
+The email address of your service account.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
+
+=== `credentials.client_id`
+
+The ID of your service account.
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
+
+=== `credentials.auth_uri`
+
+The URI for OAuth2 authorization.
+
+
+*Type*: `string`
+
+*Default*: `"https://accounts.google.com/o/oauth2/auth"`
+
+=== `credentials.token_uri`
+
+The URI that provides the OAuth2 tokens.
+
+
+*Type*: `string`
+
+*Default*: `"https://oauth2.googleapis.com/token"`
+
+=== `credentials.auth_provider_x509_cert_url`
+
+The URL of the authentication provider's X.509 public key certificate.
+
+
+*Type*: `string`
+
+*Default*: `"https://www.googleapis.com/oauth2/v1/certs"`
+
+=== `credentials.client_x509_cert_url`
+
+The URL of the service account's X.509 public key certificate. Typically: https://www.googleapis.com/robot/v1/metadata/x509/your-service-account-email%40your-project-id.iam.gserviceaccount.com
+[CAUTION]
+====
+This field contains sensitive information that usually shouldn't be added to a config directly, read our xref:configuration:secrets.adoc[secrets page for more info].
+====
+
+
+
+*Type*: `string`
+
 
 

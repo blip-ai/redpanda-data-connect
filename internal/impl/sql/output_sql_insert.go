@@ -215,6 +215,9 @@ func newSQLInsertOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resou
 		if !ok {
 			return nil, fmt.Errorf("invalid data_types entry: field %q must be a string, got %T", "name", rawName)
 		}
+		if _, exists := s.dataTypes[name]; exists {
+			return nil, fmt.Errorf("invalid data_types configuration: duplicate entry for name %q", name)
+		}
 		s.dataTypes[name] = field
 	}
 

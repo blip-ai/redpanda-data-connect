@@ -25,6 +25,7 @@ const (
 	clientX509Field       = "client_x509_cert_url"
 )
 
+// CredentialsFields returns the config fields for GCP credentials configuration.
 func CredentialsFields() []*service.ConfigField {
 	return []*service.ConfigField{
 		service.NewStringField(credentialsPathField).
@@ -84,6 +85,7 @@ func CredentialsFields() []*service.ConfigField {
 	}
 }
 
+// GetGoogleCloudCredentials extracts Google Cloud credentials from the parsed config.
 func GetGoogleCloudCredentials(parsedConfig *service.ParsedConfig) ([]option.ClientOption, error) {
 	if parsedConfig.Contains(credentialsPathField) {
 		credentialsPath, err := parsedConfig.FieldString(credentialsPathField)

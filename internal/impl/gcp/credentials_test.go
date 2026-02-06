@@ -30,7 +30,7 @@ func TestGetGoogleCloudCredentials(t *testing.T) {
 		tempDir := t.TempDir()
 		credFile := filepath.Join(tempDir, "creds.json")
 		credJSON := `{"type":"service_account","project_id":"test-project"}`
-		require.NoError(t, os.WriteFile(credFile, []byte(credJSON), 0644))
+		require.NoError(t, os.WriteFile(credFile, []byte(credJSON), 0o644))
 
 		spec := service.NewConfigSpec().Fields(CredentialsFields()...)
 		parsed, err := spec.ParseYAML(`
@@ -99,7 +99,7 @@ credentials:
 		tempDir := t.TempDir()
 		credFile := filepath.Join(tempDir, "creds.json")
 		credJSON := `{"type":"service_account","project_id":"test-project"}`
-		require.NoError(t, os.WriteFile(credFile, []byte(credJSON), 0644))
+		require.NoError(t, os.WriteFile(credFile, []byte(credJSON), 0o644))
 
 		spec := service.NewConfigSpec().Fields(CredentialsFields()...)
 		parsed, err := spec.ParseYAML(`

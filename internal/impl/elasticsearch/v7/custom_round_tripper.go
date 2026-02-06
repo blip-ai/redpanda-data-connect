@@ -8,6 +8,7 @@ import (
 	"github.com/redpanda-data/benthos/v4/public/service"
 )
 
+// LoggerRoundTripper is an HTTP round tripper that logs requests and responses.
 type LoggerRoundTripper struct {
 	Transport http.RoundTripper
 	Logger    *service.Logger
@@ -21,6 +22,7 @@ func (c *LoggerRoundTripper) transport() http.RoundTripper {
 	return http.DefaultTransport
 }
 
+// RoundTrip implements the http.RoundTripper interface.
 func (c *LoggerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	var requestBody string
 	if req.Body != nil {

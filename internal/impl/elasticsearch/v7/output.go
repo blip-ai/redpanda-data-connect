@@ -393,7 +393,7 @@ func OutputFromParsed(pConf *service.ParsedConfig, mgr *service.Resources) (*Out
 //------------------------------------------------------------------------------
 
 // Connect attempts to connect to the server.
-func (e *Output) Connect(ctx context.Context) error {
+func (e *Output) Connect(_ context.Context) error {
 	if e.client != nil {
 		return nil
 	}
@@ -404,7 +404,7 @@ func (e *Output) Connect(ctx context.Context) error {
 	}
 
 	e.client = client
-	e.log.Infof("Sending messages to Elasticsearch index at urls: %s\n", e.conf.urls)
+	e.log.Infof("Sending messages to Elasticsearch index at urls: %s\n", strings.Join(e.conf.urls, ", "))
 	return nil
 }
 
@@ -471,7 +471,7 @@ func (e *Output) WriteBatch(ctx context.Context, msg service.MessageBatch) error
 			return fmt.Errorf("stored script interpolation error: %w", ierr)
 		}
 		if e.conf.scriptParamsBlobl != nil {
-			scriptParamsMsg, ierr := msg.BloblangQuery(i, e.conf.scriptParamsBlobl)
+			scriptParamsMsg, ierr := msg.BloblangExecutor(e.conf.scriptParamsBlobl).Query(i)
 			if ierr != nil {
 				return fmt.Errorf("script params bloblang error: %w", ierr)
 			}
@@ -548,12 +548,12 @@ func (e *Output) WriteBatch(ctx context.Context, msg service.MessageBatch) error
 }
 
 // Close closes the output.
-func (e *Output) Close(context.Context) error {
+func (Output) Close(context.Context) error {
 	return nil
 }
 
 // Build a bulkable request for a given pending bulk index item.
-func (e *Output) buildBulkableRequest(p *pendingBulkIndex) (elastic.BulkableRequest, error) {
+func (Output) buildBulkableRequest(p *pendingBulkIndex) (elastic.BulkableRequest, error) {
 	switch p.Action {
 	case "update":
 		r := elastic.NewBulkUpdateRequest().

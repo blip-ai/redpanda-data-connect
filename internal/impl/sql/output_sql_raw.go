@@ -259,11 +259,14 @@ func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resource
 		}
 		nameVal, ok := fieldMap["name"]
 		if !ok {
-			return nil, fmt.Errorf("invalid data_types entry: missing required field 'name'")
+			return nil, errors.New("invalid data_types entry: missing required field 'name'")
 		}
 		name, ok := nameVal.(string)
 		if !ok {
 			return nil, fmt.Errorf("invalid data_types entry: field 'name' must be a string, got %T", nameVal)
+		}
+		if _, exists := dataTypes[name]; exists {
+			return nil, fmt.Errorf("duplicate data_type name %q: each data_type must have a unique name", name)
 		}
 		dataTypes[name] = field
 	}
