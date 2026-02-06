@@ -42,6 +42,8 @@ output:
     driver: "" # No default (required)
     dsn: clickhouse://username:password@host1:9000,host2:9000/database?dial_timeout=200ms&max_execution_time=60 # No default (required)
     query: INSERT INTO footable (foo, bar, baz) VALUES (?, ?, ?); # No default (optional)
+    columns: [] # No default (optional)
+    data_types: []
     args_mapping: root = [ this.cat.meow, this.doc.woofs[0] ] # No default (optional)
     queries: [] # No default (optional)
     max_in_flight: 64
@@ -66,6 +68,8 @@ output:
     dsn: clickhouse://username:password@host1:9000,host2:9000/database?dial_timeout=200ms&max_execution_time=60 # No default (required)
     query: INSERT INTO footable (foo, bar, baz) VALUES (?, ?, ?); # No default (optional)
     unsafe_dynamic_query: false
+    columns: [] # No default (optional)
+    data_types: []
     args_mapping: root = [ this.cat.meow, this.doc.woofs[0] ] # No default (optional)
     queries: [] # No default (optional)
     max_in_flight: 64
@@ -278,6 +282,48 @@ Whether to enable xref:configuration:interpolation.adoc#bloblang-queries[interpo
 *Type*: `bool`
 
 *Default*: `false`
+
+=== `columns`
+
+A list of columns to insert. When `data_types` is configured, this field must also be provided and must correspond positionally to the entries in `data_types`.
+
+
+*Type*: `array`
+
+
+```yml
+# Examples
+
+columns:
+  - foo
+  - bar
+  - baz
+```
+
+=== `data_types`
+
+The data types for the configured `columns`. This field must be used together with `columns`, and each entry should describe the column at the same index in `columns`.
+
+
+*Type*: `array`
+
+*Default*: `[]`
+
+```yml
+# Examples
+
+data_types:
+  - name: foo
+    type: VARCHAR
+  - datetime:
+      format: "2006-01-02 15:04:05.999"
+    name: bar
+    type: DATETIME
+  - date:
+      format: "2006-01-02"
+    name: baz
+    type: DATE
+```
 
 === `args_mapping`
 

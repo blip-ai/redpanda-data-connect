@@ -113,6 +113,7 @@ output:
     proxy_url: "" # No default (optional)
     disable_http2: false
     batch_as_multipart: false
+    parallel: false
     propagate_response: false
     max_in_flight: 64
     batching:
@@ -808,6 +809,15 @@ Requires version 4.44.0 or newer
 === `batch_as_multipart`
 
 Send message batches as a single request using https://www.w3.org/Protocols/rfc1341/7_2_Multipart.html[RFC1341^]. If disabled messages in batches will be sent as individual requests.
+
+
+*Type*: `bool`
+
+*Default*: `false`
+
+=== `parallel`
+
+When processing batched messages and `batch_as_multipart` is false, whether to send messages of the batch in parallel, otherwise they are sent serially.
 
 
 *Type*: `bool`

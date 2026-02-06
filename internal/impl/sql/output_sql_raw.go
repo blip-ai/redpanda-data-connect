@@ -35,11 +35,40 @@ func sqlRawOutputConfig() *service.ConfigSpec {
 		Field(driverField).
 		Field(dsnField).
 		Field(rawQueryField().
-			Example("INSERT INTO footable (foo, bar, baz) VALUES (?, ?, ?);").Optional()).
+			Example("INSERT INTO footable (foo, bar, baz) VALUES (?, ?, ?);").
+			Optional()).
 		Field(service.NewBoolField("unsafe_dynamic_query").
 			Description("Whether to enable xref:configuration:interpolation.adoc#bloblang-queries[interpolation functions] in the query. Great care should be made to ensure your queries are defended against injection attacks.").
 			Advanced().
 			Default(false)).
+		Field(service.NewStringListField("columns").
+			Description("A list of columns to insert. When `data_types` is configured, this field must also be provided and must correspond positionally to the entries in `data_types`.").
+			Example([]string{"foo", "bar", "baz"}).
+			Optional()).
+		Field(service.NewAnyListField("data_types").
+			Description("The data types for the configured `columns`. This field must be used together with `columns`, and each entry should describe the column at the same index in `columns`.").
+			Optional().
+			Example([]any{
+				map[string]any{
+					"name": "foo",
+					"type": "VARCHAR",
+				},
+				map[string]any{
+					"name": "bar",
+					"type": "DATETIME",
+					"datetime": map[string]any{
+						"format": "2006-01-02 15:04:05.999",
+					},
+				},
+				map[string]any{
+					"name": "baz",
+					"type": "DATE",
+					"date": map[string]any{
+						"format": "2006-01-02",
+					},
+				},
+			}).
+			Default([]any{})).
 		Field(service.NewBloblangField("args_mapping").
 			Description("An optional xref:guides:bloblang/about.adoc[Bloblang mapping] which should evaluate to an array of values matching in size to the number of placeholder arguments in the field `query`.").
 			Example("root = [ this.cat.meow, this.doc.woofs[0] ]").
@@ -136,6 +165,9 @@ type sqlRawOutput struct {
 
 	logger  *service.Logger
 	shutSig *shutdown.Signaller
+
+	columns   []string
+	dataTypes map[string]any
 }
 
 func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resources) (*sqlRawOutput, error) {
@@ -205,7 +237,59 @@ func newSQLRawOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resource
 		argsConverter = func(v []any) []any { return v }
 	}
 
-	return newSQLRawOutput(mgr.Logger(), driverStr, dsnStr, queries, argsConverter, connSettings), nil
+	columns, err := conf.FieldStringList("columns")
+	if err != nil {
+		return nil, err
+	}
+
+	dataTypesField, err := conf.FieldAnyList("data_types")
+	if err != nil {
+		return nil, err
+	}
+
+	dataTypes := map[string]any{}
+	for _, dataTypeField := range dataTypesField {
+		field, err := dataTypeField.FieldAny()
+		if err != nil {
+			return nil, err
+		}
+		fieldMap, ok := field.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid data_types entry: expected object, got %T", field)
+		}
+		nameVal, ok := fieldMap["name"]
+		if !ok {
+			return nil, errors.New("invalid data_types entry: missing required field 'name'")
+		}
+		name, ok := nameVal.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid data_types entry: field 'name' must be a string, got %T", nameVal)
+		}
+		if _, exists := dataTypes[name]; exists {
+			return nil, fmt.Errorf("duplicate data_type name %q: each data_type must have a unique name", name)
+		}
+		dataTypes[name] = field
+	}
+
+	// Validate that columns and data_types are provided together
+	hasColumns := len(columns) > 0
+	hasDataTypes := len(dataTypes) > 0
+	if hasColumns != hasDataTypes {
+		return nil, errors.New("fields 'columns' and 'data_types' must be provided together or both omitted")
+	}
+	if hasColumns && len(columns) != len(dataTypes) {
+		return nil, fmt.Errorf("number of columns (%d) must match number of data_types (%d)", len(columns), len(dataTypes))
+	}
+	// Validate that each column has a corresponding data type entry
+	if hasColumns {
+		for _, col := range columns {
+			if _, exists := dataTypes[col]; !exists {
+				return nil, fmt.Errorf("column %q does not have a corresponding entry in data_types", col)
+			}
+		}
+	}
+
+	return newSQLRawOutput(mgr.Logger(), driverStr, dsnStr, queries, argsConverter, connSettings, columns, dataTypes), nil
 }
 
 func newSQLRawOutput(
@@ -214,6 +298,8 @@ func newSQLRawOutput(
 	queries []rawQueryStatement,
 	argsConverter argsConverter,
 	connSettings *connSettings,
+	columns []string,
+	dataTypes map[string]any,
 ) *sqlRawOutput {
 	return &sqlRawOutput{
 		logger:        logger,
@@ -223,6 +309,8 @@ func newSQLRawOutput(
 		queries:       queries,
 		argsConverter: argsConverter,
 		connSettings:  connSettings,
+		columns:       columns,
+		dataTypes:     dataTypes,
 	}
 }
 
@@ -309,6 +397,22 @@ func (s *sqlRawOutput) WriteBatch(ctx context.Context, batch service.MessageBatc
 				if args, ok = iargs.([]any); !ok {
 					return fmt.Errorf("mapping returned non-array result: %T", iargs)
 				}
+
+				if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
+					if len(s.columns) != len(args) {
+						return errors.New("number of arguments must match number of columns")
+					}
+					// Column existence in dataTypes is validated at config time, so no need to re-check here
+					for i, arg := range args {
+						colName := s.columns[i]
+						newArg, err := applyDataTypeFn(arg, colName, s.dataTypes)
+						if err != nil {
+							return err
+						}
+						args[i] = newArg
+					}
+				}
+
 				args = s.argsConverter(args)
 			}
 

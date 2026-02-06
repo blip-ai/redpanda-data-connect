@@ -41,3 +41,120 @@ args_mapping: 'root = [ this.id ]'
 	require.NoError(t, err)
 	require.NoError(t, insertOutput.Close(t.Context()))
 }
+
+func TestSQLInsertOutputConfigWithDataTypes(t *testing.T) {
+	t.Run("basic config with data_types", func(t *testing.T) {
+		spec := sqlInsertOutputConfig()
+		parsed, err := spec.ParseYAML(`
+driver: mssql
+dsn: sqlserver://localhost:1433
+table: test_table
+columns: [col1, col2, col3]
+data_types:
+  - name: col1
+    type: VARCHAR
+  - name: col2
+    type: DATETIME
+    datetime:
+      format: "2006-01-02 15:04:05.999"
+  - name: col3
+    type: DATE
+    date:
+      format: "2006-01-02"
+args_mapping: root = [this.col1, this.col2, this.col3]
+max_in_flight: 1
+`, nil)
+		require.NoError(t, err)
+
+		driver, err := parsed.FieldString("driver")
+		require.NoError(t, err)
+		require.Equal(t, "mssql", driver)
+
+		table, err := parsed.FieldString("table")
+		require.NoError(t, err)
+		require.Equal(t, "test_table", table)
+
+		columns, err := parsed.FieldStringList("columns")
+		require.NoError(t, err)
+		require.Equal(t, []string{"col1", "col2", "col3"}, columns)
+
+		dataTypes, err := parsed.FieldAnyList("data_types")
+		require.NoError(t, err)
+		require.Len(t, dataTypes, 3)
+	})
+
+	t.Run("config without data_types", func(t *testing.T) {
+		spec := sqlInsertOutputConfig()
+		parsed, err := spec.ParseYAML(`
+driver: mysql
+dsn: user:pass@tcp(localhost:3306)/db
+table: test_table
+columns: [id, name]
+args_mapping: root = [this.id, this.name]
+max_in_flight: 64
+`, nil)
+		require.NoError(t, err)
+
+		driver, err := parsed.FieldString("driver")
+		require.NoError(t, err)
+		require.Equal(t, "mysql", driver)
+
+		dataTypes, err := parsed.FieldAnyList("data_types")
+		require.NoError(t, err)
+		require.Empty(t, dataTypes)
+	})
+
+	t.Run("config with prefix and suffix", func(t *testing.T) {
+		spec := sqlInsertOutputConfig()
+		parsed, err := spec.ParseYAML(`
+driver: postgres
+dsn: postgres://localhost/db
+table: test_table
+columns: [id, name]
+args_mapping: root = [this.id, this.name]
+prefix: "WITH cte AS (SELECT 1)"
+suffix: "ON CONFLICT (id) DO NOTHING"
+max_in_flight: 1
+`, nil)
+		require.NoError(t, err)
+
+		prefix, err := parsed.FieldString("prefix")
+		require.NoError(t, err)
+		require.Equal(t, "WITH cte AS (SELECT 1)", prefix)
+
+		suffix, err := parsed.FieldString("suffix")
+		require.NoError(t, err)
+		require.Equal(t, "ON CONFLICT (id) DO NOTHING", suffix)
+	})
+
+	t.Run("config with options", func(t *testing.T) {
+		spec := sqlInsertOutputConfig()
+		parsed, err := spec.ParseYAML(`
+driver: mysql
+dsn: user:pass@tcp(localhost:3306)/db
+table: test_table
+columns: [id, name]
+args_mapping: root = [this.id, this.name]
+options: [DELAYED, IGNORE]
+max_in_flight: 1
+`, nil)
+		require.NoError(t, err)
+
+		options, err := parsed.FieldStringList("options")
+		require.NoError(t, err)
+		require.Equal(t, []string{"DELAYED", "IGNORE"}, options)
+	})
+}
+
+func TestDataTypesMapping(t *testing.T) {
+	t.Run("data types for mssql", func(t *testing.T) {
+		applyFunc, exists := applyDataTypeMap["mssql"]
+		require.True(t, exists, "mssql should have data type mapping")
+		require.NotNil(t, applyFunc)
+	})
+
+	t.Run("no data types for unsupported driver", func(t *testing.T) {
+		_, exists := applyDataTypeMap["mysql"]
+		require.False(t, exists, "mysql should not have special data type mapping")
+	})
+}

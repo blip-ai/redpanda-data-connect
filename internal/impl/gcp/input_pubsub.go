@@ -32,7 +32,6 @@ import (
 const (
 	// Pubsub Input Fields
 	pbiFieldProjectID              = "project"
-	pbiFieldCredentialsJSON        = "credentials_json"
 	pbiFieldSubscriptionID         = "subscription"
 	pbiFieldEndpoint               = "endpoint"
 	pbiFieldMaxOutstandingMessages = "max_outstanding_messages"
@@ -45,7 +44,7 @@ const (
 
 type pbiConfig struct {
 	ProjectID              string
-	CredentialsJSON        string
+	Credentials            []option.ClientOption
 	SubscriptionID         string
 	Endpoint               string
 	MaxOutstandingMessages int
@@ -59,7 +58,7 @@ func pbiConfigFromParsed(pConf *service.ParsedConfig) (conf pbiConfig, err error
 	if conf.ProjectID, err = pConf.FieldString(pbiFieldProjectID); err != nil {
 		return
 	}
-	if conf.CredentialsJSON, err = pConf.FieldString(pbiFieldCredentialsJSON); err != nil {
+	if conf.Credentials, err = GetGoogleCloudCredentials(pConf); err != nil {
 		return
 	}
 	if conf.SubscriptionID, err = pConf.FieldString(pbiFieldSubscriptionID); err != nil {
@@ -112,10 +111,6 @@ You can access these metadata fields using xref:configuration:interpolation.adoc
 		Fields(
 			service.NewStringField(pbiFieldProjectID).
 				Description("The project ID of the target subscription."),
-			service.NewStringField(pbiFieldCredentialsJSON).
-				Description("An optional field to set Google Service Account Credentials json.").
-				Default("").
-				Secret(),
 			service.NewStringField(pbiFieldSubscriptionID).
 				Description("The target subscription ID."),
 			service.NewStringField(pbiFieldEndpoint).
@@ -141,7 +136,8 @@ You can access these metadata fields using xref:configuration:interpolation.adoc
 			).
 				Description("Allows you to configure the input subscription and creates if it doesn't exist.").
 				Advanced(),
-		)
+		).
+		Fields(CredentialsFields()...)
 }
 
 func init() {
@@ -199,10 +195,7 @@ func newGCPPubSubReader(conf pbiConfig, res *service.Resources) (*gcpPubSubReade
 		opt = []option.ClientOption{option.WithEndpoint(conf.Endpoint)}
 	}
 
-	opt, err = getClientOptionWithCredential(conf.CredentialsJSON, opt)
-	if err != nil {
-		return nil, err
-	}
+	opt = append(opt, conf.Credentials...)
 
 	var client *pubsub.Client
 	client, err = pubsub.NewClient(context.Background(), conf.ProjectID, opt...)

@@ -37,11 +37,9 @@ const (
 	csoFieldContentType     = "content_type"
 	csoFieldContentEncoding = "content_encoding"
 	csoFieldChunkSize       = "chunk_size"
-	csoFieldMaxInFlight     = "max_in_flight"
 	csoFieldBatching        = "batching"
 	csoFieldCollisionMode   = "collision_mode"
 	csoFieldTimeout         = "timeout"
-	csoFieldCredentialsJSON = "credentials_json"
 
 	// GCPCloudStorageErrorIfExistsCollisionMode - error-if-exists.
 	GCPCloudStorageErrorIfExistsCollisionMode = "error-if-exists"
@@ -64,7 +62,7 @@ type csoConfig struct {
 	CollisionMode   *service.InterpolatedString
 	ChunkSize       int
 	Timeout         time.Duration
-	CredentialsJSON string
+	Credentials     []option.ClientOption
 }
 
 func csoConfigFromParsed(pConf *service.ParsedConfig) (conf csoConfig, err error) {
@@ -89,7 +87,7 @@ func csoConfigFromParsed(pConf *service.ParsedConfig) (conf csoConfig, err error
 	if conf.Timeout, err = pConf.FieldDuration(csoFieldTimeout); err != nil {
 		return
 	}
-	if conf.CredentialsJSON, err = pConf.FieldString(csoFieldCredentialsJSON); err != nil {
+	if conf.Credentials, err = GetGoogleCloudCredentials(pConf); err != nil {
 		return
 	}
 	return
@@ -175,14 +173,11 @@ output:
 				Example("1s").
 				Example("500ms").
 				Default("3s"),
-			service.NewInterpolatedStringField(csoFieldCredentialsJSON).
-				Description("An optional field to set Google Service Account Credentials json.").
-				Default("").
-				Secret(),
 			service.NewOutputMaxInFlightField().
 				Description("The maximum number of message batches to have in flight at a given time. Increase this to improve throughput."),
 			service.NewBatchPolicyField(csoFieldBatching),
-		)
+		).
+		Fields(CredentialsFields()...)
 }
 
 func init() {
@@ -232,24 +227,11 @@ func (g *gcpCloudStorageOutput) Connect(context.Context) error {
 	defer g.connMut.Unlock()
 
 	var err error
-	var opt []option.ClientOption
-	opt, err = getClientOptionWithCredential(g.conf.CredentialsJSON, opt)
-	if err != nil {
-		return err
-	}
-
-	g.client, err = storage.NewClient(context.Background(), opt...)
+	g.client, err = storage.NewClient(context.Background(), g.conf.Credentials...)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func getClientOptionWithCredential(credentialsJSON string, opt []option.ClientOption) ([]option.ClientOption, error) {
-	if len(credentialsJSON) > 0 {
-		opt = append(opt, option.WithCredentialsJSON([]byte(credentialsJSON)))
-	}
-	return opt, nil
 }
 
 func (g *gcpCloudStorageOutput) WriteBatch(ctx context.Context, batch service.MessageBatch) error {

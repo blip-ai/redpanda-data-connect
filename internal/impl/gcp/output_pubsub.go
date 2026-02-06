@@ -59,10 +59,6 @@ pipeline:
 `+"```"+``).
 		Fields(
 			service.NewStringField("project").Description("The project ID of the topic to publish to."),
-			service.NewStringField("credentials_json").
-				Description("An optional field to set Google Service Account Credentials json.").
-				Default("").
-				Secret(),
 			service.NewInterpolatedStringField("topic").Description("The topic to publish to."),
 			service.NewStringField("endpoint").
 				Default("").
@@ -113,7 +109,8 @@ pipeline:
 				Advanced(),
 			service.NewBatchPolicyField("batching").
 				Description("Configures a batching policy on this output. While the PubSub client maintains its own internal buffering mechanism, preparing larger batches of messages can further trade-off some latency for throughput."),
-		)
+		).
+		Fields(CredentialsFields()...)
 }
 
 type pubsubOutput struct {
@@ -211,14 +208,13 @@ func newPubSubOutput(conf *service.ParsedConfig) (*pubsubOutput, error) {
 		opt = []option.ClientOption{option.WithEndpoint(endpoint)}
 	}
 
-	var credsJSON string
-	credsJSON, err = conf.FieldString("credentials_json")
-	if err != nil {
+	var credentials []option.ClientOption
+	if credentials, err = GetGoogleCloudCredentials(conf); err != nil {
 		return nil, err
 	}
-	opt, err = getClientOptionWithCredential(credsJSON, opt)
-	if err != nil {
-		return nil, err
+
+	if credentials != nil {
+		opt = append(opt, credentials...)
 	}
 
 	return &pubsubOutput{
