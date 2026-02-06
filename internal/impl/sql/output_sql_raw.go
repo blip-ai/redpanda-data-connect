@@ -399,12 +399,9 @@ func (s *sqlRawOutput) WriteBatch(ctx context.Context, batch service.MessageBatc
 					if len(s.columns) != len(args) {
 						return errors.New("number of arguments must match number of columns")
 					}
+					// Column existence in dataTypes is validated at config time, so no need to re-check here
 					for i, arg := range args {
 						colName := s.columns[i]
-						_, exists := s.dataTypes[colName]
-						if !exists {
-							return fmt.Errorf("no data type defined for column %q", colName)
-						}
 						newArg, err := applyDataTypeFn(arg, colName, s.dataTypes)
 						if err != nil {
 							return err

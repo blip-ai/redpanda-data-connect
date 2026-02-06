@@ -100,11 +100,9 @@ func GetGoogleCloudCredentials(parsedConfig *service.ParsedConfig) ([]option.Cli
 			return nil, err
 		}
 
-		if credentialsJSON == "" {
-			return nil, nil
+		if credentialsJSON != "" {
+			return []option.ClientOption{option.WithCredentialsJSON([]byte(credentialsJSON))}, nil
 		}
-
-		return []option.ClientOption{option.WithCredentialsJSON([]byte(credentialsJSON))}, nil
 	}
 
 	if parsedConfig.Contains(credentialsField) {

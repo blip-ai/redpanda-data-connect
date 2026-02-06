@@ -218,6 +218,18 @@ func newSQLInsertOutputFromConfig(conf *service.ParsedConfig, mgr *service.Resou
 		s.dataTypes[name] = field
 	}
 
+	// Validate data_types configuration at initialization time
+	if len(s.dataTypes) > 0 {
+		if len(s.dataTypes) != len(s.columns) {
+			return nil, errors.New("number of data_types must match number of columns")
+		}
+		for _, col := range s.columns {
+			if _, exists := s.dataTypes[col]; !exists {
+				return nil, fmt.Errorf("column %q specified but not found in data_types", col)
+			}
+		}
+	}
+
 	if conf.Contains("args_mapping") {
 		if s.argsMapping, err = conf.FieldBloblang("args_mapping"); err != nil {
 			return nil, err
@@ -351,16 +363,10 @@ func (s *sqlInsertOutput) WriteBatch(ctx context.Context, batch service.MessageB
 		}
 
 		if applyDataTypeFn, found := applyDataTypeMap[s.driver]; found && len(s.dataTypes) > 0 {
-			if len(s.dataTypes) != len(s.columns) {
-				return errors.New("number of data_types must match number of columns")
-			}
 			if len(args) != len(s.columns) {
 				return fmt.Errorf("args mapping returned %d values but only %d columns specified", len(args), len(s.columns))
 			}
 			for i, arg := range args {
-				if _, exists := s.dataTypes[s.columns[i]]; !exists {
-					return fmt.Errorf("column %q specified but not found in data_types", s.columns[i])
-				}
 				newArg, err := applyDataTypeFn(arg, s.columns[i], s.dataTypes)
 				if err != nil {
 					return err
