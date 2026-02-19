@@ -93,7 +93,7 @@ require (
 	github.com/generikvault/gvalstrings v0.0.0-20180926130504-471f38f0112a
 	github.com/getsentry/sentry-go v0.35.3
 	github.com/go-faker/faker/v4 v4.7.0
-	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/go-jose/go-jose/v4 v4.1.3
 	github.com/go-mysql-org/go-mysql v1.13.0
 	github.com/go-resty/resty/v2 v2.16.5
@@ -228,7 +228,7 @@ require (
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/platforms v1.0.0-rc.1 // indirect
 	github.com/coreos/go-oidc/v3 v3.5.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.5.0 // indirect
+	github.com/cyphar/filepath-securejoin v0.5.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
@@ -319,7 +319,7 @@ require (
 	cloud.google.com/go/trace v1.11.6 // indirect
 	cuelang.org/go v0.15.1 // indirect
 	dario.cat/mergo v1.0.2 // indirect
-	filippo.io/edwards25519 v1.1.0 // indirect
+	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/AthenZ/athenz v1.12.26 // indirect
@@ -466,7 +466,7 @@ require (
 	github.com/moby/term v0.5.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/nats-io/nats-server/v2 v2.9.23 // indirect
+	github.com/nats-io/nats-server/v2 v2.10.27 // indirect
 	github.com/nats-io/nats-streaming-server v0.24.6 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
@@ -474,7 +474,7 @@ require (
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/opencontainers/runc v1.3.1 // indirect
+	github.com/opencontainers/runc v1.3.3 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/paulmach/orb v0.12.0 // indirect
 	github.com/pgvector/pgvector-go v0.3.0
